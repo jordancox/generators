@@ -28,6 +28,11 @@ self-contained; its `index.html` also opens directly):
   cost one cell each like real teletext; mosaic blocks, double height,
   flash (animated on screen, steady in export), auto header clock, fastext
   row, CRT scanline/glow toggle, six preset pages, PNG export 1-3x.
+- **`arcade-scores/`** — arcade attract-mode high score table at a native
+  224x288 (28x36 cells) scaled 3x. Knobs: game title (rainbow/solid, auto
+  half-size when long), 1UP score, credits, copyright line (hand-made ©
+  glyph), flashing INSERT COIN, CRT glow/scanlines/vignette, fake-game
+  shuffle. Clicking the screen inserts a coin. PNG export 1-3x.
 
 The rest of this README is the planning notes.
 
@@ -80,8 +85,9 @@ textured surfaces need hand-made displacement maps per template.
   fake items, loyalty nonsense, dot-matrix font, paper grain, torn edge.
 - ~~**Teletext/Ceefax page**~~ — **built**, see `teletext/`. Strict 40x25
   grid, mosaic graphics, seven colors.
-- **Arcade high-score / attract screen** — "INSERT COIN", rank table, initials,
-  with the CRT shader. Tier 4 but the shader is reusable.
+- ~~**Arcade high-score / attract screen**~~ — **built**, see
+  `arcade-scores/`. "INSERT COIN", rank table, initials, CRT pass shared
+  with `teletext/`.
 - **Cassette J-card / VHS rental label** — tracklist, store stamp,
   "BE KIND REWIND". Tier 1-3.
 - **LucasArts SCUMM dialog/verb bar** — floating dialog lines or the verb grid.

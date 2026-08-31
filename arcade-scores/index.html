@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcade High Scores</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="page-head">
+  <h1>INSERT COIN</h1>
+  <p>arcade high-score screen &mdash; click the screen to drop a coin in</p>
+</header>
+
+<main>
+  <canvas id="screen" width="672" height="864" title="Click to insert a coin"></canvas>
+
+  <section class="controls">
+    <div class="knobs">
+      <label>Game title
+        <input id="title" type="text" maxlength="20" spellcheck="false">
+      </label>
+      <label>Title colours
+        <select id="titleStyle">
+          <option value="rainbow" selected>Rainbow</option>
+          <option value="red">Red</option>
+          <option value="yellow">Yellow</option>
+          <option value="cyan">Cyan</option>
+          <option value="white">White</option>
+        </select>
+      </label>
+      <label>1UP score
+        <input id="oneup" type="text" maxlength="6" spellcheck="false">
+      </label>
+      <label>Credits
+        <input id="credits" type="number" min="0" max="99" value="0">
+      </label>
+      <label>Copyright line
+        <input id="copyright" type="text" maxlength="24" spellcheck="false">
+      </label>
+      <label class="chk"><input id="coin" type="checkbox" checked> Flash INSERT COIN</label>
+      <label class="chk"><input id="crt" type="checkbox" checked> CRT look</label>
+    </div>
+
+    <textarea id="entries" rows="7" spellcheck="false"></textarea>
+    <p class="hint">One high score per line: AAA | 30000 &mdash; three initials, up to seven rows. Top score becomes HIGH SCORE.</p>
+
+    <div class="buttons">
+      <button id="shuffle" type="button">Another game</button>
+      <label class="scale-pick">PNG scale
+        <select id="scale">
+          <option value="1" selected>1x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+        </select>
+      </label>
+      <button id="download" type="button" class="primary">Download PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>28&times;36 cells of font8x8 at a native 224&times;288, scaled 3&times; with hard pixels; the glow, scanlines and vignette are the CRT pass from the teletext page.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
