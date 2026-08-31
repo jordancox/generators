@@ -23,6 +23,11 @@ self-contained; its `index.html` also opens directly):
   barcode, print fade, footer line, PNG export 1-3x. Reuses the font8x8
   glyph data but prints each pixel as a thermal dot; paper, torn edges,
   fade streaks and barcode are procedural.
+- **`teletext/`** — Ceefax-style page, 40x25 cells, seven colours. Inline
+  tokens ({r}, {gy}, {dh}, {nb}, {fl}...) map to spacing attributes and
+  cost one cell each like real teletext; mosaic blocks, double height,
+  flash (animated on screen, steady in export), auto header clock, fastext
+  row, CRT scanline/glow toggle, six preset pages, PNG export 1-3x.
 
 The rest of this README is the planning notes.
 
@@ -73,8 +78,8 @@ textured surfaces need hand-made displacement maps per template.
   variant.
 - ~~**Thermal receipt**~~ — **built**, see `thermal-receipt/`. Fake store,
   fake items, loyalty nonsense, dot-matrix font, paper grain, torn edge.
-- **Teletext/Ceefax page** — strict 40x25 grid, mosaic graphics, seven colors.
-  The constraints make it easy. Tier 2.
+- ~~**Teletext/Ceefax page**~~ — **built**, see `teletext/`. Strict 40x25
+  grid, mosaic graphics, seven colors.
 - **Arcade high-score / attract screen** — "INSERT COIN", rank table, initials,
   with the CRT shader. Tier 4 but the shader is reusable.
 - **Cassette J-card / VHS rental label** — tracklist, store stamp,

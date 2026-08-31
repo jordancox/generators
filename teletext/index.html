@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teletext</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="page-head">
+  <h1>PAGE 100</h1>
+  <p>teletext page generator &mdash; click the screen for another page</p>
+</header>
+
+<main>
+  <canvas id="screen" width="640" height="600" title="Click for another page"></canvas>
+
+  <section class="controls">
+    <div class="knobs">
+      <label>Page
+        <input id="page" type="text" value="100" maxlength="3" spellcheck="false">
+      </label>
+      <label>Service
+        <input id="service" type="text" value="CEEFAX" maxlength="10" spellcheck="false">
+      </label>
+      <label>Clock
+        <input id="clock" type="text" placeholder="auto" maxlength="22" spellcheck="false">
+      </label>
+      <label class="chk"><input id="crt" type="checkbox" checked> CRT look</label>
+      <label class="chk"><input id="showFastext" type="checkbox" checked> Fastext row</label>
+      <label>Fastext labels
+        <input id="fastext" type="text" value="News|Sport|Weather|Main Menu" maxlength="43" spellcheck="false">
+      </label>
+    </div>
+
+    <textarea id="body" rows="14" spellcheck="false"></textarea>
+    <p class="hint">
+      40 cells per line, and every token spends one cell, like the real thing.
+      Colour: {r} {g} {y} {b} {m} {c} {w} &middot;
+      blocks: {gr} {gg} {gy} {gb} {gm} {gc} {gw} then # (full) ' (top) , (bottom) - (middle); capitals still print &middot;
+      {dh} double height &middot; {nb} background from current colour &middot; {bb} black background &middot;
+      {fl} flash {st} steady
+    </p>
+
+    <div class="buttons">
+      <button id="shuffle" type="button">Another page</button>
+      <label class="scale-pick">PNG scale
+        <select id="scale">
+          <option value="1">1x</option>
+          <option value="2" selected>2x</option>
+          <option value="3">3x</option>
+        </select>
+      </label>
+      <button id="download" type="button" class="primary">Download PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>40&times;25 cells drawn from the repo's font8x8 engine (plus a hand-made &pound;); mosaics, header clock and scanlines are procedural.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
