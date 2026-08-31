@@ -18,6 +18,11 @@ self-contained; its `index.html` also opens directly):
   bar, Restore/Restart/Quit buttons), box width, status line, procedural
   backgrounds (desert, night, solids), PNG export 1-4x. Contains the reusable
   bitmap-font engine (public-domain font8x8 data + drawText/wrap).
+- **`thermal-receipt/`** — fake till receipt. Knobs: store/address/phone,
+  date, item list, tax rate, cash vs card, loyalty points, survey invite,
+  barcode, print fade, footer line, PNG export 1-3x. Reuses the font8x8
+  glyph data but prints each pixel as a thermal dot; paper, torn edges,
+  fade streaks and barcode are procedural.
 
 The rest of this README is the planning notes.
 
@@ -66,8 +71,8 @@ textured surfaces need hand-made displacement maps per template.
   Fully procedural; each flap is a rendered character cell with a seam and
   shading, and the flip is animated. Not done from the original idea: LED era
   variant.
-- **Thermal receipt** — fake store, fake items, loyalty nonsense, dot-matrix
-  font, paper grain, torn edge. Tier 1.
+- ~~**Thermal receipt**~~ — **built**, see `thermal-receipt/`. Fake store,
+  fake items, loyalty nonsense, dot-matrix font, paper grain, torn edge.
 - **Teletext/Ceefax page** — strict 40x25 grid, mosaic graphics, seven colors.
   The constraints make it easy. Tier 2.
 - **Arcade high-score / attract screen** — "INSERT COIN", rank table, initials,

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermal Receipt</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="page-head">
+  <h1>CUSTOMER COPY</h1>
+  <p>thermal receipt generator &mdash; click the receipt to reprint it</p>
+</header>
+
+<main>
+  <canvas id="receipt" title="Click to reprint"></canvas>
+
+  <section class="controls">
+    <div class="knobs">
+      <label>Store
+        <input id="store" type="text" maxlength="21" spellcheck="false">
+      </label>
+      <label>Address
+        <input id="addr" type="text" maxlength="40" spellcheck="false">
+      </label>
+      <label>Phone
+        <input id="phone" type="text" maxlength="20" spellcheck="false">
+      </label>
+      <label>Date/time
+        <input id="date" type="text" placeholder="auto" maxlength="20" spellcheck="false">
+      </label>
+    </div>
+
+    <div class="knobs">
+      <label>Tax %
+        <input id="tax" type="number" min="0" max="25" step="0.05" value="8.25">
+      </label>
+      <label>Paid with
+        <select id="payment">
+          <option value="cash" selected>Cash</option>
+          <option value="card">Card</option>
+        </select>
+      </label>
+      <label><span>Fade <span id="fadeVal">12</span>%</span>
+        <input id="fade" type="range" min="0" max="70" value="12">
+      </label>
+      <label class="chk"><input id="loyalty" type="checkbox" checked> Loyalty points</label>
+      <label class="chk"><input id="survey" type="checkbox" checked> Survey invite</label>
+      <label class="chk"><input id="barcode" type="checkbox" checked> Barcode</label>
+      <label>Footer line
+        <input id="footer" type="text" maxlength="40" spellcheck="false">
+      </label>
+    </div>
+
+    <textarea id="items" rows="9" spellcheck="false"></textarea>
+    <p class="hint">One item per line: NAME | PRICE</p>
+
+    <div class="buttons">
+      <button id="shuffle" type="button">Shuffle receipt</button>
+      <label class="scale-pick">PNG scale
+        <select id="scale">
+          <option value="1">1x</option>
+          <option value="2" selected>2x</option>
+          <option value="3">3x</option>
+        </select>
+      </label>
+      <button id="download" type="button" class="primary">Download PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>The text is the public-domain font8x8 laid down dot by dot; paper, tear, fade and barcode are procedural.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
