@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generators</title>
+<meta name="description" content="Small web-based retro text/image generators: type some text, tweak the knobs, download an image.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230b0c0e'/><text x='8' y='12.5' text-anchor='middle' font-family='monospace' font-size='11' font-weight='bold' fill='%23f3c623'>G</text></svg>">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0b0c0e;
+  --panel: #16181b;
+  --panel-edge: #26292e;
+  --ink: #d5d8dc;
+  --ink-dim: #8b9097;
+  --accent: #f3c623;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 44px 16px 40px;
+}
+
+.page-head { text-align: center; margin-bottom: 34px; }
+.page-head h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  margin-right: -0.5em;
+  color: var(--accent);
+}
+.page-head p { font-size: 13px; color: var(--ink-dim); margin-top: 8px; }
+
+main { width: 100%; max-width: 1060px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+/* keep single orphan cards from stretching full-width */
+@media (min-width: 680px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.card:hover, .card:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  outline: none;
+}
+
+.card .thumb {
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+.card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s;
+}
+.card:hover .thumb img { transform: scale(1.03); }
+.card .thumb.fit img { object-fit: contain; }
+
+.card .body { padding: 15px 17px 17px; }
+.card h2 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 7px;
+}
+.card p { font-size: 13px; line-height: 1.55; color: var(--ink-dim); }
+
+.section-label {
+  margin: 40px 0 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+.backlog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  list-style: none;
+}
+.backlog li {
+  background: var(--panel);
+  border: 1px dashed var(--panel-edge);
+  border-radius: 8px;
+  padding: 11px 14px;
+}
+.backlog .name {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.backlog .note { font-size: 11.5px; color: var(--ink-dim); line-height: 1.45; }
+
+.page-foot { margin-top: 46px; text-align: center; }
+.page-foot p { font-size: 12px; color: var(--ink-dim); }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>GENERATORS</h1>
+  <p>type some text, tweak the knobs, download an image &mdash; everything runs in your browser</p>
+</header>
+
+<main>
+  <div class="grid">
+    <a class="card" href="split-flap/index.html">
+      <div class="thumb fit"><img src="assets/split-flap.png" alt="Split-flap departures board showing flights to London, Amsterdam, Munich and more"></div>
+      <div class="body">
+        <h2>Split-Flap Departures Board</h2>
+        <p>Airport departures board with animated, clicking flaps. Set the title, clock and
+           flight list; pick white or yellow letters, black airport or ivory railway flaps,
+           color-coded remarks and optional flip sound. Exports PNG at 2&times;.</p>
+      </div>
+    </a>
+
+    <a class="card" href="sierra-death/index.html">
+      <div class="thumb"><img src="assets/sierra-death.png" alt="Sierra-style death dialog reading You have died, with Restore, Restart and Quit buttons"></div>
+      <div class="body">
+        <h2>Sierra Death Dialog</h2>
+        <p>320&times;200 EGA adventure-game demise, in AGI style (red border, &ldquo;Press ENTER&rdquo;)
+           or SCI0 style (drop shadow, title bar, Restore/Restart/Quit). Procedural backgrounds,
+           status line, box width knob. Exports PNG at 1&ndash;4&times;.</p>
+      </div>
+    </a>
+  </div>
+
+  <h2 class="section-label">In the workshop</h2>
+  <ul class="backlog">
+    <li><span class="name">thermal-receipt</span><span class="note">Fake store, loyalty nonsense, dot-matrix font, torn edge.</span></li>
+    <li><span class="name">teletext</span><span class="note">Strict 40&times;25 grid, mosaic graphics, seven colors.</span></li>
+    <li><span class="name">arcade-high-score</span><span class="note">INSERT COIN, rank table, initials &mdash; with a CRT shader.</span></li>
+    <li><span class="name">vhs-label</span><span class="note">Cassette J-card / rental label. BE KIND REWIND.</span></li>
+    <li><span class="name">scumm-dialog</span><span class="note">LucasArts floating dialog lines or the verb grid.</span></li>
+    <li><span class="name">sierra-title</span><span class="note">Chrome-lettered title screens, PQ2 case study.</span></li>
+  </ul>
+</main>
+
+<footer class="page-foot">
+  <p>No servers, no ripped assets &mdash; every pixel is drawn procedurally on a canvas.</p>
+</footer>
+</body>
+</html>

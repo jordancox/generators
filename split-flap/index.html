@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Split-Flap Departures Board</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="page-head">
+  <h1>SPLIT&#8211;FLAP</h1>
+  <p>departures board generator &mdash; click the board to re-flip</p>
+</header>
+
+<main>
+  <canvas id="board" title="Click to re-flip"></canvas>
+
+  <section class="controls">
+    <div class="knobs">
+      <label>Board title
+        <input id="title" type="text" value="DEPARTURES" maxlength="22" spellcheck="false">
+      </label>
+      <label>Clock
+        <input id="clock" type="text" placeholder="auto" maxlength="5" spellcheck="false">
+      </label>
+      <label>Letters
+        <select id="letterColor">
+          <option value="main" selected>White</option>
+          <option value="yellow">Yellow</option>
+        </select>
+      </label>
+      <label>Flaps
+        <select id="scheme">
+          <option value="black" selected>Black (airport)</option>
+          <option value="ivory">Ivory (railway)</option>
+        </select>
+      </label>
+      <label class="chk"><input id="autoRemark" type="checkbox" checked> Color-code remarks</label>
+      <label class="chk"><input id="sound" type="checkbox"> Sound</label>
+    </div>
+
+    <textarea id="rows" rows="9" spellcheck="false"></textarea>
+    <p class="hint">One flight per line: TIME | FLIGHT | DESTINATION | GATE | REMARK</p>
+
+    <div class="buttons">
+      <button id="shuffle" type="button">Shuffle flights</button>
+      <button id="reflip" type="button">Re-flip</button>
+      <button id="download" type="button" class="primary">Download PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>Everything is drawn procedurally on a canvas &mdash; no images, no fonts ripped, no server.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
