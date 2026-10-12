@@ -129,6 +129,7 @@ const LOOKS = {
   nosignal: { label: 'No signal', font: 'archivo-black', finish: 'plastic', color1: '#f0f0f0', sidesMatch: false, sideColor: '#555555', depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'flicker', bg: 'tvstatic', effect: 'shadow' },
   aurora: { label: 'Northern lights', font: 'times', finish: 'marble', color1: '#e8f4ff', color2: '#4a7a9a', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'ice', anim: 'spin-stop', bg: 'aurora', effect: 'glow', effectColor: '#5affb0' },
   pizza: { label: 'Pizza party', font: 'luckiest-guy', finish: 'pizza', sidesMatch: false, sideColor: '#c8862a', depth: 0.32, bevel: 'fat', lights: 'studio', anim: 'bounce', bg: 'rainbow', effect: 'shadow' },
+  heaven: { label: 'Heaven sent', font: 'times-bold', finish: 'gold', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin', bg: 'heaven', effect: 'shadow' },
   wallpaper: { label: 'Default wallpaper', font: 'archivo-black', finish: 'chrome', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin', bg: 'hills', effect: 'shadow' },
   safari: { label: 'Safari', font: 'anton', finish: 'zebra', sidesMatch: false, sideColor: '#111111', depth: 0.25, bevel: 'chamfer', lights: 'studio', anim: 'letters-flip', bg: 'tropical' },
   sweet: { label: 'Sweet tooth', font: 'luckiest-guy', finish: 'candy', color1: '#ff2a4a', color2: '#ffffff', sidesMatch: false, sideColor: '#a0001a', depth: 0.3, bevel: 'fat', lights: 'studio', anim: 'jelly', bg: 'color', bgColor: '#ffe0f0', effect: 'shadow' },
@@ -145,7 +146,7 @@ const PHRASES = [
   'this could have\nbeen an email', 'big if true', 'who did this', 'happy birthday\nyou legend',
   'see you never', 'hell yeah', 'wow', 'cool cool cool', 'on my way\n(lying)',
   'legally i can\'t say', 'thank u', 'oops', 'per my last email', 'i\'m baby',
-  'bon appétit', 'who is she', 'not now', 'yes chef', 'good morning\nto everyone\nexcept you',
+  'bon appétit', 'the internet\nwas a mistake', 'who is she', 'not now', 'yes chef', 'good morning\nto everyone\nexcept you',
 ];
 
 /* ====================== state ====================== */

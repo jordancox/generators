@@ -103,6 +103,75 @@ function ripples(ctx, w, top, bottom, t, rgb, n = 8) {
   }
 }
 
+// a cumulus cloud with the sun somewhere behind or beside it: puffs shaded
+// from their sunward side, a flat bottom, and a bright rim on the edges
+// facing the sun (what's left of the cloud after taking away a copy moved
+// away from it). `back` runs from 0, lit from the front, to 1, right in
+// front of the sun, which makes the body darker and the rim brighter.
+function litCloud(ctx, seed, cx, cy, size, sun, reach) {
+  const rand = mulberry32(seed);
+  const puffs = [];
+  const row = (n, spread, y0, rk, dome) => {
+    for (let i = 0; i < n; i++) {
+      const u = n === 1 ? 0 : (i / (n - 1)) * 2 - 1;
+      const r = size * (rk + rand() * 0.1) * (1 - dome * u * u);
+      puffs.push([u * spread * size + (rand() - 0.5) * size * 0.08, y0 * size - r * 0.25 + (rand() - 0.5) * size * 0.05, r]);
+    }
+  };
+  row(2, 0.15, -0.42, 0.24, 0);
+  row(4, 0.5, -0.24, 0.24, 0.35);
+  row(7, 0.8, 0, 0.22, 0.3);
+  const W = Math.ceil(size * 2.7), H = Math.ceil(size * 1.7);
+  const px = W / 2, py = H * 0.62;  // the cloud's centre inside its own canvas
+  const flatten = (g) => {
+    g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = vgrad(g, py + size * 0.05, py + size * 0.3, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,1)']]);
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+  };
+  const shape = () => {
+    const c = canvas(W, H), g = c.getContext('2d');
+    for (const [x, y, r] of puffs) {
+      const gr = g.createRadialGradient(px + x, py + y, 0, px + x, py + y, r);
+      gr.addColorStop(0, 'rgba(255,255,255,1)');
+      gr.addColorStop(0.8, 'rgba(255,255,255,1)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      circle(g, px + x, py + y, r);
+    }
+    flatten(g);
+    return c;
+  };
+  const dx = cx - sun.x, dy = cy - sun.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+  const back = clamp(1 - d / reach, 0, 1);
+  const top = mixRgb([255, 255, 255], [184, 190, 206], back), bot = mixRgb([150, 164, 192], [100, 106, 132], back);
+  const body = canvas(W, H), bc = body.getContext('2d');
+  bc.fillStyle = vgrad(bc, py - size * 0.75, py + size * 0.3, [[0, `rgb(${top})`], [1, `rgb(${bot})`]]);
+  bc.fillRect(0, 0, W, H);
+  // a soft highlight on each puff's sunward shoulder makes the top bumpy
+  for (const [x, y, r] of puffs) {
+    const hx = px + x - ux * r * 0.3, hy = py + y - r * 0.45 - uy * r * 0.15;
+    const gr = bc.createRadialGradient(hx, hy, 0, hx, hy, r * 0.9);
+    gr.addColorStop(0, `rgba(${top},0.85)`);
+    gr.addColorStop(1, `rgba(${top},0)`);
+    bc.fillStyle = gr;
+    circle(bc, hx, hy, r * 0.9);
+  }
+  bc.globalCompositeOperation = 'destination-in';
+  bc.drawImage(shape(), 0, 0);
+  const rim = shape(), rc = rim.getContext('2d');
+  const shift = size * (0.08 + 0.08 * back);
+  rc.globalCompositeOperation = 'destination-out';
+  rc.drawImage(shape(), ux * shift, uy * shift);
+  rc.globalCompositeOperation = 'source-in';
+  rc.fillStyle = '#fff6dc';
+  rc.fillRect(0, 0, W, H);
+  bc.globalCompositeOperation = 'source-atop';
+  bc.globalAlpha = 0.35 + 0.65 * back;
+  bc.drawImage(rim, 0, 0);
+  ctx.drawImage(body, Math.round(cx - px), Math.round(cy - py));
+}
+
 function heart(ctx, x, y, s) {
   ctx.beginPath();
   ctx.moveTo(x, y + s * 0.35);
@@ -175,6 +244,79 @@ export const BACKGROUNDS = {
       ripples(ctx, w, st.hz, h, t, '120,150,255');
       glitterPath(ctx, st.moon.x, st.hz, h, st.moon.r, t, st.dashes, '255,248,210');
       drawTwinkle(ctx, st.tw, t);
+    },
+  },
+
+  heaven: {
+    label: 'Sun through the clouds',
+    prepare(w, h) {
+      const rand = mulberry32(17);
+      // B sets the cloud size; a wide, short GIF gets smaller clouds
+      const B = Math.min((w + h) / 2, h * 1.4), sun = { x: w * 0.6, y: h * 0.24, r: B * 0.035 };
+      // high clouds away from the sun, the bank with the sun just behind
+      // its edge, then big low ones
+      const layer = canvas(w, h), lc = layer.getContext('2d');
+      const C = [
+        [0.05, 0.12, 0.16], [0.32, 0.06, 0.13], [0.97, 0.1, 0.16],
+        [0.3, 0.38, 0.2], [0.92, 0.46, 0.19], [0.72, 0.34, 0.19],
+        [0.04, 0.78, 0.28], [0.98, 0.84, 0.26], [0.5, 1.0, 0.32],
+      ];
+      C.forEach(([x, y, k], i) => litCloud(lc, 100 + i * 7, x * w, y * h, k * B, sun, B * 0.55));
+      return {
+        B, sun, layer,
+        rays: Array.from({ length: 22 }, (_, i) => ({
+          a: (i + rand() * 0.6) / 22 * TAU, half: 0.012 + rand() * 0.03,
+          alpha: 0.35 + rand() * 0.65, speed: 1 + Math.floor(rand() * 2), phase: rand(),
+        })),
+      };
+    },
+    base(ctx, w, h, o, { B, sun }) {
+      ctx.fillStyle = vgrad(ctx, 0, h, [[0, '#1c56b8'], [0.55, '#4f92e2'], [1, '#b4d4f4']]);
+      ctx.fillRect(0, 0, w, h);
+      const g = ctx.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, B * 0.75);
+      g.addColorStop(0, 'rgba(255,252,235,1)');
+      g.addColorStop(0.08, 'rgba(255,246,210,0.9)');
+      g.addColorStop(0.3, 'rgba(255,236,180,0.35)');
+      g.addColorStop(1, 'rgba(255,230,170,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff';
+      circle(ctx, sun.x, sun.y, sun.r);
+    },
+    // the rays shimmer and sway a little behind the clouds, and the sun
+    // breathes over the edge of the one in front of it
+    frame(ctx, w, h, t, f, o, { sun, layer, rays }) {
+      const R = Math.hypot(w, h);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(sun.x, sun.y, sun.r, sun.x, sun.y, R);
+      g.addColorStop(0, 'rgba(255,248,220,0.5)');
+      g.addColorStop(0.35, 'rgba(255,244,210,0.18)');
+      g.addColorStop(1, 'rgba(255,240,200,0)');
+      ctx.fillStyle = g;
+      for (const r of rays) {
+        const a = r.a + 0.02 * Math.sin(TAU * (t + r.phase));
+        const down = 0.45 + 0.55 * Math.max(0, Math.sin(a));  // beams falling below the clouds are stronger
+        ctx.globalAlpha = r.alpha * down * (0.55 + 0.45 * Math.sin(TAU * (t * r.speed + r.phase)));
+        ctx.beginPath();
+        ctx.moveTo(sun.x, sun.y);
+        ctx.lineTo(sun.x + Math.cos(a - r.half) * R, sun.y + Math.sin(a - r.half) * R);
+        ctx.lineTo(sun.x + Math.cos(a + r.half) * R, sun.y + Math.sin(a + r.half) * R);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.drawImage(layer, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+      const pulse = 0.8 + 0.2 * Math.sin(TAU * t);
+      const core = ctx.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, sun.r * 4);
+      core.addColorStop(0, `rgba(255,252,240,${(0.8 * pulse).toFixed(3)})`);
+      core.addColorStop(0.4, `rgba(255,248,225,${(0.35 * pulse).toFixed(3)})`);
+      core.addColorStop(1, 'rgba(255,250,230,0)');
+      ctx.fillStyle = core;
+      circle(ctx, sun.x, sun.y, sun.r * 4);
+      ctx.restore();
     },
   },
 
