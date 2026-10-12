@@ -42,6 +42,8 @@
       <label>Bevel <select id="bevel"></select></label>
       <label>Spacing <input id="spacing" type="range" min="-0.08" max="0.3" step="0.01" value="0.02"></label>
       <label>Lights <select id="lights"></select></label>
+      <label>Effect <select id="effect"></select></label>
+      <label id="effectColorWrap">Effect colour <input id="effectColor" type="color" value="#ffffff"></label>
       <label class="chk"><input id="chunky" type="checkbox"> Chunky polygons</label>
       <label class="chk"><input id="jaggies" type="checkbox"> Jagged edges</label>
     </div>
@@ -73,6 +75,7 @@
     <div class="knobs">
       <label>Background <select id="bg"></select></label>
       <label id="bgColorWrap">Colour <input id="bgColor" type="color" value="#000000"></label>
+      <label class="chk" id="animBgWrap"><input id="animBg" type="checkbox" checked> Animate the background</label>
       <label id="matteWrap">Edges blend into
         <select id="matte">
           <option value="#ffffff">White (most chats)</option>

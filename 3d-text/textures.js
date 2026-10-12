@@ -1,5 +1,5 @@
-// Procedural canvas textures for the letter faces, the chrome/gold
-// reflection maps and the page backgrounds. Everything is drawn from a
+// Procedural canvas textures for the letter faces and the chrome/gold/holo
+// reflection maps (the backdrops are in backgrounds.js). Everything is drawn from a
 // seed, so the same settings always give the same picture, and every tiled
 // texture wraps cleanly (the noise is periodic) so the GIF loops.
 
@@ -12,7 +12,7 @@ export function mulberry32(a) {
   };
 }
 
-function canvas(w, h) {
+export function canvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   return c;
@@ -23,13 +23,13 @@ export function hexToRgb(hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const mix = (a, b, t) => a + (b - a) * t;
-const mixRgb = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)];
+export const mixRgb = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)];
 
 /* Value noise on a lattice that wraps every `period` cells, summed over
    octaves whose periods double, so the result tiles at any size. */
-function periodicNoise(seed, period) {
+export function periodicNoise(seed, period) {
   const rand = mulberry32(seed);
   const octaves = [];
   for (let o = 0, p = period; o < 4; o++, p *= 2) {
@@ -210,6 +210,85 @@ export function leopard(seed) {
   return c;
 }
 
+/* Mirror tiles with dark grout. Three seeds give three sets of lit
+   tiles, swapped every couple of frames like the glitter. */
+export function discoTiles(seed) {
+  const rand = mulberry32(seed);
+  const c = canvas(64, 64);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1c1c22';
+  ctx.fillRect(0, 0, 64, 64);
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const r = rand();
+      const v = r < 0.1 ? 255 : 90 + Math.floor(rand() * 110);
+      ctx.fillStyle = r < 0.1 ? '#ffffff' : `rgb(${v},${v},${Math.min(255, v + 25)})`;
+      ctx.fillRect(x * 8 + 1, y * 8 + 1, 7, 7);
+    }
+  }
+  return c;
+}
+
+export function candy(a, b) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  // 45-degree stripes, 64 px a tile; the period (32) divides 64 so it wraps
+  return paintPixels(canvas(64, 64), (x, y) => ((Math.round(x * 64) + Math.round(y * 64)) % 32 < 16 ? A : B));
+}
+
+export function zebra(seed) {
+  const n = periodicNoise(seed, 3);
+  return paintPixels(canvas(256, 256), (x, y) => {
+    const v = Math.sin((x * 3 + n(x, y) * 1.4) * Math.PI * 2);
+    return v > 0.15 ? [20, 18, 16] : [245, 242, 232];
+  });
+}
+
+export function pizza(seed) {
+  const rand = mulberry32(seed);
+  const n = periodicNoise(seed + 1, 4);
+  const c = paintPixels(canvas(256, 256), (x, y) => {
+    const v = n(x, y);
+    const bake = v > 0.62 ? 0.75 : 1;
+    return [242 * bake, (178 + v * 40) * bake, 60 * bake];
+  });
+  const ctx = c.getContext('2d');
+  const wrap = (fn) => { for (const ox of [-256, 0, 256]) for (const oy of [-256, 0, 256]) fn(ox, oy); };
+  for (let i = 0; i < 7; i++) {
+    const px = rand() * 256, py = rand() * 256, r = 20 + rand() * 9;
+    const spots = Array.from({ length: 5 }, () => [(rand() - 0.5) * r, (rand() - 0.5) * r]);
+    wrap((ox, oy) => {
+      ctx.fillStyle = '#b3241a';
+      ctx.beginPath(); ctx.arc(px + ox, py + oy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7e1410';
+      for (const [sx, sy] of spots) { ctx.beginPath(); ctx.arc(px + ox + sx, py + oy + sy, 2.5, 0, Math.PI * 2); ctx.fill(); }
+    });
+  }
+  ctx.fillStyle = '#2f8a2a';
+  for (let i = 0; i < 14; i++) {
+    const x = rand() * 256, y = rand() * 256, a = rand() * Math.PI;
+    wrap((ox, oy) => {
+      ctx.save(); ctx.translate(x + ox, y + oy); ctx.rotate(a); ctx.fillRect(-5, -2, 10, 4); ctx.restore();
+    });
+  }
+  return c;
+}
+
+export function galaxy(seed) {
+  const n = periodicNoise(seed, 3);
+  const rand = mulberry32(seed + 5);
+  const deep = [10, 4, 32], mid = [74, 26, 138], hot = [224, 74, 168];
+  const c = paintPixels(canvas(256, 256), (x, y) => {
+    const v = n(x, y);
+    return v < 0.5 ? mixRgb(deep, mid, clamp((v - 0.25) * 4, 0, 1)) : mixRgb(mid, hot, clamp((v - 0.5) * 3, 0, 1));
+  });
+  const ctx = c.getContext('2d');
+  for (let i = 0; i < 180; i++) {
+    ctx.fillStyle = rand() < 0.8 ? '#ffffff' : '#9fe8ff';
+    ctx.fillRect(Math.floor(rand() * 256), Math.floor(rand() * 256), 1, 1);
+  }
+  return c;
+}
+
 /* Flames get repainted every frame. The noise wraps vertically, and `t`
    (0..1 over the loop) scrolls it exactly one period, so the GIF loops. */
 const flameNoise = periodicNoise(7, 4);
@@ -224,7 +303,23 @@ export function flames(c, t) {
     return mixRgb(FLAME_RAMP[i], FLAME_RAMP[i + 1], f - i);
   });
 }
-export const flameCanvas = () => canvas(96, 96);
+
+/* Lava: dark crust with glowing cracks along the noise's mid-line,
+   creeping sideways one tile per loop. */
+const lavaNoise = periodicNoise(13, 3);
+const LAVA_RAMP = [[40, 10, 4], [150, 20, 0], [255, 90, 0], [255, 200, 40], [255, 245, 180]];
+export function lava(c, t) {
+  return paintPixels(c, (x, y) => {
+    const v = lavaNoise(x + t, y);
+    const glow = clamp(1 - Math.abs(v - 0.5) * 12, 0, 0.999);
+    const f = glow * (LAVA_RAMP.length - 1);
+    const i = Math.floor(f);
+    return mixRgb(LAVA_RAMP[i], LAVA_RAMP[i + 1], f - i);
+  });
+}
+
+// the small canvas the live (repainted every frame) finishes draw into
+export const liveCanvas = () => canvas(96, 96);
 
 export function picture(img) {
   const c = canvas(512, 512);
@@ -238,10 +333,14 @@ export function picture(img) {
 /* The flat letter fronts can't pick up a horizon from a reflection (every
    point looks the same way), so chrome and gold paint one on: sky fading
    down to a bright horizon line, then dark ground, as on every 80s logo. */
+const METAL_STOPS = {
+  gold: [[0, '#4a2600'], [0.42, '#ffd24a'], [0.5, '#fffbe0'], [0.53, '#6a3a00'], [0.78, '#d99a1c'], [1, '#ffe9a0']],
+  chrome: [[0, '#0a1648'], [0.3, '#3a6fd0'], [0.47, '#bcdcff'], [0.5, '#ffffff'], [0.53, '#24140a'], [0.76, '#8a5f3a'], [1, '#ecd2b0']],
+  // holographic is a pastel rainbow instead of a horizon
+  holo: [[0, '#ffb3e6'], [0.2, '#c9b3ff'], [0.4, '#a8e6ff'], [0.6, '#b3ffd9'], [0.8, '#fff3b3'], [1, '#ffc2b3']],
+};
 export function metalFace(kind) {
-  const stops = kind === 'gold'
-    ? [[0, '#4a2600'], [0.42, '#ffd24a'], [0.5, '#fffbe0'], [0.53, '#6a3a00'], [0.78, '#d99a1c'], [1, '#ffe9a0']]
-    : [[0, '#0a1648'], [0.3, '#3a6fd0'], [0.47, '#bcdcff'], [0.5, '#ffffff'], [0.53, '#24140a'], [0.76, '#8a5f3a'], [1, '#ecd2b0']];
+  const stops = METAL_STOPS[kind];
   const c = canvas(4, 256);
   const ctx = c.getContext('2d');
   const g = ctx.createLinearGradient(0, 0, 0, 256);
@@ -257,6 +356,16 @@ export function metalFace(kind) {
 export function envMap(kind) {
   const c = canvas(512, 256);
   const ctx = c.getContext('2d');
+  if (kind === 'holo') {
+    // pastel hue bands running round the horizon, tilted a little
+    for (let x = 0; x < 512; x += 2) {
+      for (let y = 0; y < 256; y += 16) {
+        ctx.fillStyle = `hsl(${((x / 512) * 1080 + (y / 256) * 140) % 360}, 95%, 72%)`;
+        ctx.fillRect(x, y, 2, 16);
+      }
+    }
+    return c;
+  }
   const P = kind === 'gold'
     ? { sky: ['#3a1e00', '#e0a020', '#fff6c4'], ground: ['#fff1a0', '#8a5000', '#1c0e00'] }
     : { sky: ['#050c2a', '#3a7ad8', '#e8f4ff'], ground: ['#ffffff', '#5a3a1e', '#0e0602'] };
@@ -269,69 +378,5 @@ export function envMap(kind) {
   // a few soft "studio windows" so spinning letters catch a glint
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   for (const x of [60, 300]) ctx.fillRect(x, 70, 50, 26);
-  return c;
-}
-
-/* ---------- backgrounds ----------
-   Drawn once per settings change at the output size. */
-export function background(kind, w, h, color, img) {
-  const c = canvas(w, h);
-  const ctx = c.getContext('2d');
-  const rand = mulberry32(1234);
-  if (kind === 'transparent') return null;
-  if (kind === 'color') {
-    ctx.fillStyle = color; ctx.fillRect(0, 0, w, h);
-  } else if (kind === 'stars') {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < (w * h) / 450; i++) {
-      const b = 120 + Math.floor(rand() * 135);
-      ctx.fillStyle = `rgb(${b},${b},${b})`;
-      const s = rand() < 0.08 ? 2 : 1;
-      ctx.fillRect(Math.floor(rand() * w), Math.floor(rand() * h), s, s);
-    }
-  } else if (kind === 'geocities') {
-    const tile = canvas(48, 48);
-    const t = tile.getContext('2d');
-    t.fillStyle = '#000046'; t.fillRect(0, 0, 48, 48);
-    const star = (x, y, col, r) => {
-      t.fillStyle = col;
-      t.fillRect(x - r, y, r * 2 + 1, 1);
-      t.fillRect(x, y - r, 1, r * 2 + 1);
-      t.fillRect(x, y, 1, 1);
-    };
-    star(10, 12, '#ffff66', 3); star(34, 30, '#ffffff', 2); star(22, 42, '#66ffff', 1); star(42, 6, '#ffffff', 1);
-    ctx.fillStyle = ctx.createPattern(tile, 'repeat');
-    ctx.fillRect(0, 0, w, h);
-  } else if (kind === 'clouds') {
-    ctx.fillStyle = ctx.createPattern(clouds(99), 'repeat');
-    ctx.fillRect(0, 0, w, h);
-  } else if (kind === 'sunset') {
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, '#1b0a3c'); g.addColorStop(0.55, '#c2268a'); g.addColorStop(1, '#ff9a3c');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-    const r = Math.min(w, h) * 0.32;
-    ctx.save();
-    ctx.beginPath(); ctx.arc(w / 2, h * 0.78, r, 0, Math.PI * 2); ctx.clip();
-    const sg = ctx.createLinearGradient(0, h * 0.78 - r, 0, h * 0.78 + r);
-    sg.addColorStop(0, '#ffe76a'); sg.addColorStop(1, '#ff4f6a');
-    ctx.fillStyle = sg; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#c2268a';
-    for (let i = 0; i < 6; i++) ctx.fillRect(0, h * 0.78 + i * r * 0.16, w, 2 + i * 1.5);
-    ctx.restore();
-  } else if (kind === 'checker') {
-    const s = Math.max(8, Math.round(w / 16));
-    for (let y = 0; y < h; y += s) {
-      for (let x = 0; x < w; x += s) {
-        ctx.fillStyle = ((x + y) / s) % 2 ? '#000' : '#fff';
-        ctx.fillRect(x, y, s, s);
-      }
-    }
-  } else if (kind === 'picture') {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
-    if (img) {
-      const s = Math.max(w / img.width, h / img.height);
-      ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s);
-    }
-  }
   return c;
 }

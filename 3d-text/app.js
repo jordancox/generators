@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Font } from 'three/addons/loaders/FontLoader.js';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import * as TX from './textures.js';
+import { BACKGROUNDS, makeBackground } from './backgrounds.js';
 
 const $ = (id) => document.getElementById(id);
 const TAU = Math.PI * 2;
@@ -26,21 +27,31 @@ const FONTS = {
 
 // mapping: "stretch" spans each line once, "tile" repeats `per` times an em.
 // scroll: the texture slides one full repeat per loop when "Animate the
-// finish" is ticked. uses: which colour pickers matter.
+// finish" is ticked. variants: three textures swapped every two frames
+// (nearest: unsmoothed, so they twinkle). live: repainted every frame.
+// uses: which colour pickers matter.
 const FINISHES = {
   plastic: { label: 'Shiny plastic', uses: 1 },
   chrome: { label: 'Chrome', env: 'chrome', mapping: 'stretch', uses: 0 },
   gold: { label: 'Gold', env: 'gold', mapping: 'stretch', uses: 0 },
   rainbow: { label: 'Rainbow', mapping: 'stretch', scroll: 'v', uses: 0, make: () => TX.rainbow() },
   gradient: { label: 'Two-colour fade', mapping: 'stretch', uses: 2, make: (s) => TX.gradient(s.color1, s.color2) },
-  glitter: { label: 'Glitter', mapping: 'tile', per: 2.5, uses: 1, glitter: true },
-  flames: { label: 'Flames', mapping: 'stretch', uses: 0, flames: true },
+  holo: { label: 'Holographic', env: 'holo', mapping: 'stretch', uses: 0 },
+  neon: { label: 'Neon', uses: 1, neon: true },
+  glitter: { label: 'Glitter', mapping: 'tile', per: 2.5, uses: 1, variants: (s, seed) => TX.glitter(s.color1, seed), nearest: true },
+  discoball: { label: 'Disco ball', mapping: 'tile', per: 2, uses: 0, variants: (s, seed) => TX.discoTiles(seed), nearest: true, mirror: true },
+  flames: { label: 'Flames', mapping: 'stretch', uses: 0, live: TX.flames },
+  lava: { label: 'Lava', mapping: 'tile', uses: 0, live: TX.lava },
   marble: { label: 'Marble', mapping: 'tile', scroll: 'u', uses: 2, make: (s) => TX.marble(s.color1, s.color2, 5) },
   leopard: { label: 'Leopard', mapping: 'tile', per: 1.6, scroll: 'u', uses: 0, make: () => TX.leopard(3) },
   wood: { label: 'Wood', mapping: 'tile', scroll: 'u', uses: 0, make: () => TX.wood(8) },
   clouds: { label: 'Clouds', mapping: 'tile', scroll: 'u', uses: 0, make: () => TX.clouds(4) },
   camo: { label: 'Camo', mapping: 'tile', per: 1.3, scroll: 'u', uses: 0, make: () => TX.camo(6) },
   checker: { label: 'Checkerboard', mapping: 'tile', scroll: 'u', uses: 2, make: (s) => TX.checker(s.color1, s.color2) },
+  candy: { label: 'Candy stripes', mapping: 'tile', per: 0.7, scroll: 'u', uses: 2, make: (s) => TX.candy(s.color1, s.color2) },
+  zebra: { label: 'Zebra', mapping: 'tile', scroll: 'u', uses: 0, make: () => TX.zebra(9) },
+  galaxy: { label: 'Galaxy', mapping: 'tile', per: 0.8, scroll: 'u', uses: 0, make: () => TX.galaxy(12) },
+  pizza: { label: 'Pizza', mapping: 'tile', scroll: 'u', uses: 0, make: () => TX.pizza(5) },
   picture: { label: 'Your picture', mapping: 'stretch', uses: 0, make: () => TX.picture(picture) },
 };
 
@@ -72,6 +83,7 @@ const ANIMS = {
   jelly: 'Jelly',
   'lines-opposite': 'Lines spin opposite ways',
   shake: 'Angry shake',
+  flicker: 'Neon flicker',
   none: 'None (still)',
 };
 
@@ -82,15 +94,12 @@ const BEVELS = {
   fat: { label: 'Fat and round', size: 0.045, segments: 4 },
 };
 
-const BACKGROUNDS = {
-  transparent: 'See-through',
-  color: 'Solid colour',
-  stars: 'Starfield',
-  geocities: 'GeoCities stars',
-  clouds: 'Clouds',
-  sunset: 'Sunset',
-  checker: 'Checkerboard',
-  picture: 'Your picture',
+// drawn over the background, under the text, with canvas shadows
+const EFFECTS = {
+  none: 'None',
+  shadow: 'Drop shadow',
+  glow: 'Glow',
+  outline: 'Outline',
 };
 
 const LOOKS = {
@@ -105,12 +114,31 @@ const LOOKS = {
   metal: { label: 'Heavy metal', font: 'gothic', finish: 'chrome', sidesMatch: true, depth: 0.2, bevel: 'chamfer', lights: 'sunset', anim: 'rock', bg: 'stars' },
   leopard: { label: 'Leopard lounge', font: 'anton', finish: 'leopard', sidesMatch: false, sideColor: '#2a1608', depth: 0.25, bevel: 'round', lights: 'studio', anim: 'letters-spin', bg: 'transparent' },
   angry: { label: 'Very angry', font: 'anton', finish: 'plastic', color1: '#ff1010', sidesMatch: false, sideColor: '#600000', depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'shake', bg: 'color', bgColor: '#000000' },
-  disco: { label: 'Disco', font: 'luckiest-guy', finish: 'plastic', color1: '#ffffff', sidesMatch: false, sideColor: '#bbbbbb', depth: 0.3, bevel: 'round', lights: 'party', anim: 'spin', bg: 'color', bgColor: '#000000' },
+  disco: { label: 'Disco inferno', font: 'luckiest-guy', finish: 'discoball', sidesMatch: true, depth: 0.3, bevel: 'round', lights: 'party', anim: 'spin', bg: 'disco' },
   geocities: { label: 'Welcome to my homepage', font: 'times-bold', finish: 'rainbow', sidesMatch: false, sideColor: '#202060', depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin-stop', bg: 'geocities' },
   marble: { label: 'Marble bust', font: 'times-bold', finish: 'marble', color1: '#f2efe8', color2: '#5a5a66', sidesMatch: true, depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'tumble', bg: 'color', bgColor: '#1a1a1a' },
+  moonlight: { label: 'Moonlight serenade', font: 'times-bold', finish: 'gradient', color1: '#ffffff', color2: '#7fa8ff', sidesMatch: false, sideColor: '#1a2a5a', depth: 0.22, bevel: 'round', lights: 'ice', anim: 'swing', bg: 'moonlake', effect: 'glow', effectColor: '#9fc4ff' },
+  tropical: { label: 'Tropical', font: 'luckiest-guy', finish: 'gradient', color1: '#fff35a', color2: '#ff7a1a', sidesMatch: false, sideColor: '#a01a6a', depth: 0.3, bevel: 'round', lights: 'sunset', anim: 'wave', bg: 'tropical', effect: 'shadow' },
+  space: { label: 'Lost in space', font: 'archivo-black', finish: 'holo', sidesMatch: true, depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'tumble', bg: 'space' },
+  outrun: { label: 'Outrun', font: 'anton', finish: 'chrome', sidesMatch: true, depth: 0.25, bevel: 'chamfer', lights: 'sunset', anim: 'swing', bg: 'synthwave', effect: 'glow', effectColor: '#ff2bd6' },
+  neon: { label: 'Neon sign', font: 'pacifico', finish: 'neon', color1: '#ff3fd0', sidesMatch: false, sideColor: '#1a0a1a', depth: 0.08, bevel: 'round', lights: 'studio', anim: 'flicker', bg: 'color', bgColor: '#0a0a14', effect: 'glow', effectColor: '#ff3fd0' },
+  sea: { label: 'Under the sea', font: 'comic-neue', finish: 'plastic', color1: '#2affd4', sidesMatch: false, sideColor: '#0a5a7a', depth: 0.3, bevel: 'fat', lights: 'ice', anim: 'wave', bg: 'underwater' },
+  hell: { label: 'This is fine', font: 'anton', finish: 'lava', sidesMatch: false, sideColor: '#2a0800', depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'shake', bg: 'firewall', effect: 'shadow' },
+  love: { label: 'Love you', font: 'pacifico', finish: 'glitter', color1: '#ff1a5a', sidesMatch: false, sideColor: '#6a0020', depth: 0.18, bevel: 'round', lights: 'studio', anim: 'pulse', bg: 'hearts', effect: 'outline', effectColor: '#ffffff' },
+  sleepy: { label: 'You are getting sleepy', font: 'comic-neue', finish: 'rainbow', sidesMatch: false, sideColor: '#222222', depth: 0.25, bevel: 'round', lights: 'studio', anim: 'rock', bg: 'spiral', bgColor: '#000000', effect: 'outline', effectColor: '#000000' },
+  nosignal: { label: 'No signal', font: 'archivo-black', finish: 'plastic', color1: '#f0f0f0', sidesMatch: false, sideColor: '#555555', depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'flicker', bg: 'tvstatic', effect: 'shadow' },
+  aurora: { label: 'Northern lights', font: 'times', finish: 'marble', color1: '#e8f4ff', color2: '#4a7a9a', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'ice', anim: 'spin-stop', bg: 'aurora', effect: 'glow', effectColor: '#5affb0' },
+  pizza: { label: 'Pizza party', font: 'luckiest-guy', finish: 'pizza', sidesMatch: false, sideColor: '#c8862a', depth: 0.32, bevel: 'fat', lights: 'studio', anim: 'bounce', bg: 'rainbow', effect: 'shadow' },
+  wallpaper: { label: 'Default wallpaper', font: 'archivo-black', finish: 'chrome', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin', bg: 'hills', effect: 'shadow' },
+  safari: { label: 'Safari', font: 'anton', finish: 'zebra', sidesMatch: false, sideColor: '#111111', depth: 0.25, bevel: 'chamfer', lights: 'studio', anim: 'letters-flip', bg: 'tropical' },
+  sweet: { label: 'Sweet tooth', font: 'luckiest-guy', finish: 'candy', color1: '#ff2a4a', color2: '#ffffff', sidesMatch: false, sideColor: '#a0001a', depth: 0.3, bevel: 'fat', lights: 'studio', anim: 'jelly', bg: 'color', bgColor: '#ffe0f0', effect: 'shadow' },
+  cosmic: { label: 'Cosmic', font: 'gothic', finish: 'galaxy', sidesMatch: false, sideColor: '#1a0a3a', depth: 0.25, bevel: 'chamfer', lights: 'toxic', anim: 'spin', bg: 'space', effect: 'glow', effectColor: '#c04aff' },
 };
 
-const LOOK_DEFAULTS = { color1: '#ff3fb4', color2: '#3f7bff', sideColor: '#333333', bgColor: '#000000', spacing: 0.02, chunky: false, jaggies: false, animTexture: true };
+const LOOK_DEFAULTS = {
+  color1: '#ff3fb4', color2: '#3f7bff', sideColor: '#333333', bgColor: '#000000', spacing: 0.02,
+  chunky: false, jaggies: false, animTexture: true, animBg: true, effect: 'none', effectColor: '#ffffff',
+};
 
 const PHRASES = [
   'lol nothing matters', 'sorry i was asleep', 'ok', 'no thoughts\nhead empty',
@@ -125,7 +153,8 @@ const PHRASES = [
 let S = null;            // current settings, read from the form
 let picture = null;      // uploaded Image, used by the picture finish/background
 let block = null;        // laid-out text: sizes plus the letter and line objects
-let bgCanvas = null;     // background drawn at the output size, or null
+let bg = null;           // { base, frame } at the output size, or null for see-through
+let textAlpha = 1;       // dimmed by the neon flicker
 let size = { w: 480, h: 240 };
 let busy = false;        // an export is running
 let dirty = true;
@@ -166,7 +195,8 @@ const faceMaterials = [faceMat, faceMat, sideMat];  // caps, bevel, sides
 let faceTex = null;       // current map texture (owned, disposed on change)
 let builtFinish = 'plastic';  // the finish the materials were last built for
 let glitterTex = [];      // three alternating glitter maps
-let flameCanvas = null;
+let liveCanvas = null;   // repainted every frame by the live finishes
+let silCanvas = null;    // the text's silhouette, for the outline effect
 const envMaps = {};
 
 function envMap(kind) {
@@ -406,6 +436,7 @@ function updateMaterials() {
   faceMat.combine = THREE.MultiplyOperation;
   faceMat.reflectivity = 1;
   faceMat.color.set('#ffffff');
+  faceMat.emissive.set('#000000');
   faceMat.specular.set('#ffffff');
   faceMat.shininess = 70;
 
@@ -429,23 +460,31 @@ function updateMaterials() {
     capMat.specular.set('#ffffff');
     capMat.shininess = 90;
     capMat.needsUpdate = true;
-  } else if (F.glitter) {
+  } else if (F.variants) {
     glitterTex = [11, 12, 13].map((seed) => {
-      const t = canvasTexture(TX.glitter(S.color1, seed));
-      t.magFilter = t.minFilter = THREE.NearestFilter;
-      t.generateMipmaps = false;
+      const t = canvasTexture(F.variants(S, seed));
+      if (F.nearest) {
+        t.magFilter = t.minFilter = THREE.NearestFilter;
+        t.generateMipmaps = false;
+      }
       return t;
     });
     faceMat.map = glitterTex[0];
-    faceMat.specular.set('#666666');
-    faceMat.shininess = 60;
-  } else if (F.flames) {
-    flameCanvas = flameCanvas || TX.flameCanvas();
-    TX.flames(flameCanvas, 0);
-    faceTex = canvasTexture(flameCanvas);
+    faceMat.specular.set(F.mirror ? '#ffffff' : '#666666');
+    faceMat.shininess = F.mirror ? 120 : 60;
+  } else if (F.live) {
+    liveCanvas = liveCanvas || TX.liveCanvas();
+    F.live(liveCanvas, 0);
+    faceTex = canvasTexture(liveCanvas);
     faceMat.map = faceTex;
     faceMat.specular.set('#ffd080');
     faceMat.shininess = 40;
+  } else if (F.neon) {
+    // the tube glows its own colour; the lights only add a highlight
+    faceMat.color.set('#202020');
+    faceMat.emissive.set(S.color1);
+    faceMat.specular.set('#ffffff');
+    faceMat.shininess = 90;
   } else if (F.make) {
     faceTex = canvasTexture(F.make(S));
     faceMat.map = faceTex;
@@ -485,11 +524,11 @@ function updateLights(t) {
 
 function animatesFinish() {
   const F = FINISHES[S.finish];
-  return S.animTexture && !!(F.scroll || F.glitter || F.flames);
+  return S.animTexture && !!(F.scroll || F.variants || F.live);
 }
 
 function isStill() {
-  return S.anim === 'none' && !animatesFinish() && !LIGHTS[S.lights].orbit;
+  return S.anim === 'none' && !animatesFinish() && !LIGHTS[S.lights].orbit && !(bg && bg.frame && S.animBg);
 }
 
 function frameCount() {
@@ -509,6 +548,7 @@ function pose(t, frame, shapeOnly = false) {
     L.pivot.rotation.set(0, 0, 0);
     L.pivot.scale.setScalar(1);
   }
+  textAlpha = 1;
   const s = Math.sin(TAU * t);
   const n = Math.max(1, B.letters.length - 1);
   switch (S.anim) {
@@ -544,6 +584,12 @@ function pose(t, frame, shapeOnly = false) {
     case 'lines-opposite':
       B.lines.forEach((L, li) => { L.group.rotation.y = TAU * t * (li % 2 ? -1 : 1); });
       break;
+    case 'flicker': {
+      // mostly on, now and then a stutter, like a sign that needs a new tube
+      const r = TX.mulberry32(frame * 7919 + 5)();
+      textAlpha = r < 0.1 ? 0.12 : r < 0.18 ? 0.55 : 1;
+      break;
+    }
     case 'shake': {
       const r = TX.mulberry32(frame * 9973 + 17);
       root.position.set((r() - 0.5) * 0.12, (r() - 0.5) * 0.1, 0);
@@ -558,10 +604,10 @@ function pose(t, frame, shapeOnly = false) {
   if (!S.animTexture) return;
   // the form can be a frame ahead of the materials, so go by what was built
   const F = FINISHES[builtFinish];
-  if (F.glitter && glitterTex.length) {
+  if (F.variants && glitterTex.length) {
     faceMat.map = glitterTex[Math.floor(frame / 2) % glitterTex.length];
-  } else if (F.flames && faceTex) {
-    TX.flames(flameCanvas, t);
+  } else if (F.live && faceTex) {
+    F.live(liveCanvas, t);
     faceTex.needsUpdate = true;
   } else if (F.scroll && faceTex) {
     faceTex.offset.set(F.scroll === 'u' ? t : 0, F.scroll === 'v' ? t : 0);
@@ -619,19 +665,66 @@ function resize() {
   display.width = size.w;
   display.height = size.h;
   renderer.setSize(size.w, size.h, false);
-  bgCanvas = TX.background(S.bg, size.w, size.h, S.bgColor, picture);
-  display.classList.toggle('see-through', !bgCanvas);
+  bg = makeBackground(S.bg, size.w, size.h, { color: S.bgColor, img: picture });
+  display.classList.toggle('see-through', !bg);
   fitCamera();
   $('sizeNote').textContent = `${size.w} × ${size.h}, ${frameCount()} frame${frameCount() === 1 ? '' : 's'}`;
+}
+
+function silhouette(src, color) {
+  if (!silCanvas || silCanvas.width !== src.width || silCanvas.height !== src.height) {
+    silCanvas = document.createElement('canvas');
+    silCanvas.width = src.width;
+    silCanvas.height = src.height;
+  }
+  const c = silCanvas.getContext('2d');
+  c.globalCompositeOperation = 'source-over';
+  c.clearRect(0, 0, src.width, src.height);
+  c.drawImage(src, 0, 0);
+  c.globalCompositeOperation = 'source-in';
+  c.fillStyle = color;
+  c.fillRect(0, 0, src.width, src.height);
+  return silCanvas;
+}
+
+// the rendered letters, with the chosen effect, scaled to the output width
+function drawText(ctx) {
+  const src = renderer.domElement, u = size.w / 480;
+  ctx.save();
+  ctx.globalAlpha = textAlpha;
+  if (S.effect === 'shadow') {
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 4 * u;
+    ctx.shadowOffsetX = ctx.shadowOffsetY = 5 * u;
+    ctx.drawImage(src, 0, 0);
+  } else if (S.effect === 'glow') {
+    ctx.shadowColor = S.effectColor;
+    ctx.shadowBlur = 16 * u;
+    ctx.drawImage(src, 0, 0);
+    ctx.shadowBlur = 6 * u;
+    ctx.drawImage(src, 0, 0);
+  } else if (S.effect === 'outline') {
+    const sil = silhouette(src, S.effectColor), r = Math.max(1.5, 2.5 * u);
+    for (let k = 0; k < 12; k++) ctx.drawImage(sil, Math.cos((k / 12) * TAU) * r, Math.sin((k / 12) * TAU) * r);
+    ctx.drawImage(src, 0, 0);
+  } else {
+    ctx.drawImage(src, 0, 0);
+  }
+  ctx.restore();
 }
 
 function drawFrame(ctx, t, frame, fill) {
   pose(t, frame);
   renderer.render(scene, camera);
   ctx.clearRect(0, 0, size.w, size.h);
-  if (bgCanvas) ctx.drawImage(bgCanvas, 0, 0);
-  else if (fill) { ctx.fillStyle = fill; ctx.fillRect(0, 0, size.w, size.h); }
-  ctx.drawImage(renderer.domElement, 0, 0);
+  if (bg) {
+    ctx.drawImage(bg.base, 0, 0);
+    if (bg.frame) bg.frame(ctx, S.animBg ? t : 0, S.animBg ? frame : 0);
+  } else if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fillRect(0, 0, size.w, size.h);
+  }
+  drawText(ctx);
 }
 
 let lastFrame = -1;
@@ -725,7 +818,7 @@ async function makeGif() {
     for (let f = 0; f < n; f++) {
       drawFrame(wctx, still ? 0 : f / n, f);
       const img = wctx.getImageData(0, 0, w, h);
-      if (!bgCanvas) applyMatte(img.data, matte);
+      if (!bg) applyMatte(img.data, matte);
       frames.push(new Uint8Array(img.data.buffer));
       if (f % 4 === 0) { status(`Drawing frame ${f + 1} of ${n}…`); await nextPaint(); }
     }
@@ -845,7 +938,10 @@ function readSettings() {
     seconds: +$('seconds').value,
     fps: +$('fps').value,
     animTexture: $('animTexture').checked,
+    effect: $('effect').value,
+    effectColor: $('effectColor').value,
     bg: $('bg').value,
+    animBg: $('animBg').checked,
     bgColor: $('bgColor').value,
     width: +$('width').value,
     shape: $('shape').value,
@@ -859,7 +955,9 @@ function showRelevant() {
   $('color1Wrap').hidden = F.uses < 1;
   $('color2Wrap').hidden = F.uses < 2;
   $('sideColorWrap').hidden = S.sidesMatch;
-  $('bgColorWrap').hidden = S.bg !== 'color';
+  $('bgColorWrap').hidden = S.bg !== 'color' && S.bg !== 'spiral';
+  $('animBgWrap').hidden = !BACKGROUNDS[S.bg].frame;
+  $('effectColorWrap').hidden = S.effect !== 'glow' && S.effect !== 'outline';
   $('matteWrap').hidden = S.bg !== 'transparent';
   $('pictureWrap').hidden = S.finish !== 'picture' && S.bg !== 'picture';
 }
@@ -912,6 +1010,8 @@ function randomLook() {
   $('lights').value = pick(LIGHTS);
   $('anim').value = pick(ANIMS, ['none']);
   $('bg').value = pick(BACKGROUNDS, noPic);
+  $('effect').value = Math.random() < 0.55 ? 'none' : pick(EFFECTS, ['none']);
+  $('effectColor').value = bright();
   $('bgColor').value = bright();
   $('look').value = '';
   changed();
@@ -943,6 +1043,7 @@ function init() {
   fillSelect('anim', ANIMS);
   fillSelect('bevel', BEVELS);
   fillSelect('bg', BACKGROUNDS);
+  fillSelect('effect', EFFECTS);
   $('look').innerHTML = '<option value="">(your own)</option>' +
     Object.entries(LOOKS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
 
