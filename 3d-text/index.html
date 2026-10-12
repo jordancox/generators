@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Text GIFs</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<header class="page-head">
+  <h1>3D TEXT</h1>
+  <p>spinning 3D text GIFs, the way Xara 3D used to make them</p>
+</header>
+
+<main>
+  <canvas id="screen" width="480" height="240"></canvas>
+  <p class="hint size-note" id="sizeNote"></p>
+
+  <section class="controls">
+    <textarea id="text" rows="2" maxlength="90" spellcheck="false" aria-label="Text"></textarea>
+    <div class="buttons tight">
+      <button id="phrase" type="button">Another phrase</button>
+      <label class="inline">Look
+        <select id="look"></select>
+      </label>
+      <button id="randomLook" type="button">Random look</button>
+    </div>
+
+    <h2>Letters</h2>
+    <div class="knobs">
+      <label>Font <select id="font"></select></label>
+      <label>Finish <select id="finish"></select></label>
+      <label id="color1Wrap">Colour <input id="color1" type="color" value="#ff3fb4"></label>
+      <label id="color2Wrap">Second colour <input id="color2" type="color" value="#3f7bff"></label>
+      <label id="pictureWrap">Picture <input id="picture" type="file" accept="image/*"></label>
+      <label class="chk"><input id="sidesMatch" type="checkbox" checked> Sides match the front</label>
+      <label id="sideColorWrap">Sides <input id="sideColor" type="color" value="#333333"></label>
+      <label>Depth <input id="depth" type="range" min="0.04" max="0.8" step="0.01" value="0.22"></label>
+      <label>Bevel <select id="bevel"></select></label>
+      <label>Spacing <input id="spacing" type="range" min="-0.08" max="0.3" step="0.01" value="0.02"></label>
+      <label>Lights <select id="lights"></select></label>
+      <label class="chk"><input id="chunky" type="checkbox"> Chunky polygons</label>
+      <label class="chk"><input id="jaggies" type="checkbox"> Jagged edges</label>
+    </div>
+
+    <h2>Motion</h2>
+    <div class="knobs">
+      <label>Animation <select id="anim"></select></label>
+      <label>Loop length
+        <select id="seconds">
+          <option value="1">1 second</option>
+          <option value="1.5">1.5 seconds</option>
+          <option value="2" selected>2 seconds</option>
+          <option value="3">3 seconds</option>
+          <option value="4">4 seconds</option>
+        </select>
+      </label>
+      <label>Frames a second
+        <select id="fps">
+          <option value="10">10 (choppy, small)</option>
+          <option value="20" selected>20</option>
+          <option value="25">25</option>
+          <option value="50">50 (smooth, big)</option>
+        </select>
+      </label>
+      <label class="chk"><input id="animTexture" type="checkbox" checked> Animate the finish</label>
+    </div>
+
+    <h2>Background</h2>
+    <div class="knobs">
+      <label>Background <select id="bg"></select></label>
+      <label id="bgColorWrap">Colour <input id="bgColor" type="color" value="#000000"></label>
+      <label id="matteWrap">Edges blend into
+        <select id="matte">
+          <option value="#ffffff">White (most chats)</option>
+          <option value="#000000">Black</option>
+          <option value="#313338">Discord dark</option>
+          <option value="#0b141a">WhatsApp dark</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Output</h2>
+    <div class="knobs">
+      <label>Width
+        <select id="width">
+          <option value="320">320 px</option>
+          <option value="400">400 px</option>
+          <option value="480" selected>480 px</option>
+          <option value="640">640 px</option>
+        </select>
+      </label>
+      <label>Shape
+        <select id="shape">
+          <option value="fit" selected>Fit the text</option>
+          <option value="square">Square</option>
+          <option value="4:3">4:3</option>
+          <option value="16:9">16:9</option>
+          <option value="4:5">Tall (4:5)</option>
+        </select>
+      </label>
+      <label>GIF quality
+        <select id="quality">
+          <option value="60">Smaller file</option>
+          <option value="80" selected>Normal</option>
+          <option value="100">Best</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="buttons">
+      <button id="makeGif" type="button" class="primary">Make GIF</button>
+      <button id="makeVideo" type="button">Make video</button>
+      <button id="savePng" type="button">Save PNG</button>
+      <span id="status" class="status" role="status"></span>
+    </div>
+  </section>
+
+  <section id="result" class="result" hidden>
+    <img id="resultImg" alt="Your GIF">
+    <p id="resultInfo" class="hint"></p>
+    <div class="buttons">
+      <a id="resultSave" class="button primary" href="#" download>Save GIF</a>
+      <button id="share" type="button" hidden>Share</button>
+    </div>
+    <p class="hint">On a phone you can also press and hold the GIF to save or copy it.</p>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>This copies the look of <a href="https://animatedtext.tumblr.com/">AnimatedText</a>, the Tumblr
+  where Cat Frazier (1991&ndash;2026) made spinning 3D text out of whatever people asked her for,
+  using Xara 3D Maker.</p>
+  <p>The letters are real 3D in three.js, lit with old Phong shading and coloured lights. GIFs are
+  encoded by gifski, which picks the colours across all the frames at once. Video comes out as MP4
+  where the browser can make one and WebM where it can't.</p>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

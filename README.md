@@ -33,6 +33,15 @@ self-contained; its `index.html` also opens directly):
   half-size when long), 1UP score, credits, copyright line (hand-made ©
   glyph), flashing INSERT COIN, CRT glow/scanlines/vignette, fake-game
   shuffle. Clicking the screen inserts a coin. PNG export 1-3x.
+- **`3d-text/`** — spinning 3D text GIFs in the Xara 3D / AnimatedText style.
+  Real extruded letters in three.js 0.186.1 (vendored, MIT) with Phong
+  shading, coloured light rigs, bevels and per-letter animation; 14 finishes
+  (chrome, gold, glitter, flames, marble, leopard, a picture of your own...)
+  and 15 loops. GIFs are encoded by gifski-wasm 2.2.0 (vendored, AGPL,
+  single-threaded build in a worker), with a matte colour for see-through
+  edges; MP4/WebM video via MediaRecorder; PNG stills. Fonts are free
+  lookalikes converted with `3d-text/tools/ttf2typeface.py` (fontTools),
+  kerning included; licences in `3d-text/fonts/`.
 
 The rest of this README is the planning notes.
 

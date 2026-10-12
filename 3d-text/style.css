@@ -1,0 +1,162 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0b0c0e;
+  --panel: #16181b;
+  --panel-edge: #26292e;
+  --ink: #d5d8dc;
+  --ink-dim: #8b9097;
+  --accent: #ff4fb8;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 28px 16px 40px;
+}
+
+.page-head { text-align: center; margin-bottom: 22px; }
+.page-head h1 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  margin-right: -0.5em; /* balance the trailing letter-space */
+  color: var(--accent);
+}
+.page-head p { font-size: 12.5px; color: var(--ink-dim); margin-top: 6px; }
+
+main { width: 100%; max-width: 1400px; display: flex; flex-direction: column; align-items: center; }
+
+#screen {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+/* checkerboard behind see-through text, like every paint program */
+#screen.see-through {
+  background: repeating-conic-gradient(#d8d8d8 0% 25%, #ffffff 0% 50%) 0 0 / 16px 16px;
+}
+.size-note { text-align: center; }
+
+.controls, .result {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 22px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.controls h2 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 20px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.knobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: end;
+}
+
+.knobs label, label.inline {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+label.inline { flex-direction: row; align-items: center; gap: 7px; }
+
+.knobs label.chk {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 8px;
+  cursor: pointer;
+}
+[hidden] { display: none !important; }
+
+input[type="text"], select, textarea {
+  background: #0e0f11;
+  color: var(--ink);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 9px;
+  outline: none;
+  max-width: 100%;
+}
+input[type="text"]:focus, select:focus, textarea:focus { border-color: #4a4f56; }
+input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+input[type="range"] { accent-color: var(--accent); width: 130px; }
+input[type="color"] {
+  width: 52px;
+  height: 32px;
+  padding: 2px;
+  background: #0e0f11;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  cursor: pointer;
+}
+input[type="file"] { font-size: 12px; color: var(--ink-dim); max-width: 220px; }
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.hint { font-size: 11.5px; color: var(--ink-dim); margin-top: 7px; font-family: var(--mono); }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center; }
+.buttons.tight { margin-top: 10px; }
+.status { font-size: 12.5px; color: var(--ink-dim); font-family: var(--mono); }
+
+button, a.button {
+  font: 600 13px/1 system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: #24272b;
+  border: 1px solid #33373d;
+  border-radius: 7px;
+  padding: 10px 18px;
+  cursor: pointer;
+  text-decoration: none;
+}
+button:hover, a.button:hover { background: #2c3036; }
+button:active, a.button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.5; cursor: wait; }
+button.primary, a.button.primary { background: var(--accent); border-color: var(--accent); color: #141414; }
+button.primary:hover, a.button.primary:hover { background: #ff73c8; }
+
+.result { text-align: center; }
+.result img {
+  max-width: 100%;
+  height: auto;
+  background: repeating-conic-gradient(#d8d8d8 0% 25%, #ffffff 0% 50%) 0 0 / 16px 16px;
+}
+.result .buttons { justify-content: center; }
+
+.page-foot { margin-top: 34px; max-width: 900px; }
+.page-foot p { font-size: 11.5px; color: #5c6167; margin-top: 6px; }
+.page-foot a { color: #8b9097; }
