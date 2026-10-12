@@ -172,6 +172,27 @@ function litCloud(ctx, seed, cx, cy, size, sun, reach) {
   ctx.drawImage(body, Math.round(cx - px), Math.round(cy - py));
 }
 
+// film grain, in blocks of `px` pixels: `amount` shifts each colour channel
+// separately, `alphaAmount` thins out the alpha (for light beams)
+function grain(c, px, amount, alphaAmount, rand) {
+  const g = c.getContext('2d');
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data, W = c.width;
+  for (let y = 0; y < c.height; y += px) {
+    for (let x = 0; x < W; x += px) {
+      const dr = (rand() - 0.5) * 2 * amount, dg = (rand() - 0.5) * 2 * amount, db = (rand() - 0.5) * 2 * amount;
+      const da = 1 - rand() * alphaAmount;
+      for (let yy = y; yy < Math.min(y + px, c.height); yy++) {
+        for (let xx = x; xx < Math.min(x + px, W); xx++) {
+          const i = (yy * W + xx) * 4;
+          d[i] = clamp(d[i] + dr, 0, 255); d[i + 1] = clamp(d[i + 1] + dg, 0, 255); d[i + 2] = clamp(d[i + 2] + db, 0, 255);
+          d[i + 3] *= da;
+        }
+      }
+    }
+  }
+  g.putImageData(img, 0, 0);
+}
+
 function heart(ctx, x, y, s) {
   ctx.beginPath();
   ctx.moveTo(x, y + s * 0.35);
@@ -316,6 +337,193 @@ export const BACKGROUNDS = {
       core.addColorStop(1, 'rgba(255,250,230,0)');
       ctx.fillStyle = core;
       circle(ctx, sun.x, sun.y, sun.r * 4);
+      ctx.restore();
+    },
+  },
+
+  valley: {
+    label: 'Sunbeam valley',
+    prepare(w, h) {
+      const rand = mulberry32(41);
+      const sun = { x: w * 0.3, y: h * 0.15 };
+      const lake = { cx: w * 0.4, cy: h * 0.77, rx: w * 0.42, ry: h * 0.085 };
+      const path = new Path2D();
+      const ph = [rand() * TAU, rand() * TAU, rand() * TAU];
+      for (let i = 0; i <= 48; i++) {
+        const a = (i / 48) * TAU;
+        const k = 1 + 0.08 * Math.sin(3 * a + ph[0]) + 0.05 * Math.sin(5 * a + ph[1]) + 0.04 * Math.sin(9 * a + ph[2]);
+        const x = lake.cx + Math.cos(a) * lake.rx * k, y = lake.cy + Math.sin(a) * lake.ry * k;
+        if (i) path.lineTo(x, y); else path.moveTo(x, y);
+      }
+      path.closePath();
+      const sparkles = [];
+      while (sparkles.length < Math.round((w * h) / 1100)) {
+        const u = rand() * 2 - 1, v = rand() * 2 - 1;
+        if (u * u + v * v > 0.8) continue;
+        sparkles.push({ x: Math.round(lake.cx + u * lake.rx), y: Math.round(lake.cy + v * lake.ry), phase: rand(), speed: 1 + Math.floor(rand() * 3), big: rand() < 0.3 });
+      }
+      // the beams: orange at the top, pink, then purple as they fade, in
+      // three grainy layers that take turns to brighten
+      const px = Math.max(1, Math.round(w / 400));
+      const layers = [0, 1, 2].map(() => canvas(w, h));
+      for (let i = 0; i < 12; i++) {
+        const lc = layers[i % 3].getContext('2d');
+        const off = (i / 11 - 0.5) * w * 0.3 + (rand() - 0.5) * w * 0.02;
+        const x0 = sun.x + off;
+        const len = i === 5 ? lake.cy - sun.y : h * (0.28 + rand() * 0.32);
+        const half = w * (0.01 + rand() * 0.02);
+        const x1 = x0 + off * 0.5 * (len / h);
+        const g = lc.createLinearGradient(0, sun.y, 0, sun.y + len);
+        const a = 0.65 + rand() * 0.35;
+        g.addColorStop(0, 'rgba(255,150,80,0)');
+        g.addColorStop(0.18, `rgba(255,140,80,${a})`);
+        g.addColorStop(0.4, `rgba(255,80,160,${a * 0.85})`);
+        g.addColorStop(0.75, `rgba(170,80,255,${a * 0.5})`);
+        g.addColorStop(1, 'rgba(120,90,255,0)');
+        lc.fillStyle = g;
+        lc.beginPath();
+        lc.moveTo(x0 - half, sun.y); lc.lineTo(x0 + half, sun.y);
+        lc.lineTo(x1 + half * 1.6, sun.y + len); lc.lineTo(x1 - half * 1.6, sun.y + len);
+        lc.closePath();
+        lc.fill();
+      }
+      for (const l of layers) grain(l, px, 0, 0.6, rand);
+      return { sun, lake, path, sparkles, layers, px };
+    },
+    base(ctx, w, h, o, { sun, lake, path, px }) {
+      const rand = mulberry32(42);
+      ctx.fillStyle = vgrad(ctx, 0, h * 0.5, [[0, '#3c442c'], [0.3, '#4a5040'], [0.6, '#6e5ea8'], [0.82, '#b4a4ec'], [1, '#d4c8f6']]);
+      ctx.fillRect(0, 0, w, h);
+      const glow = ctx.createRadialGradient(sun.x, h * 0.3, 0, sun.x, h * 0.3, w * 0.45);
+      glow.addColorStop(0, 'rgba(170,140,240,0.6)');
+      glow.addColorStop(1, 'rgba(170,140,240,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+      // streaky clouds stippled in dabs: a dark mass, lit lavender, pink or
+      // blue along the bottom, thinning out towards the ends
+      const gauss = () => (rand() + rand() + rand() - 1.5) / 1.5;
+      const streak = (x, y, len, th, cols, lit, a) => {
+        const count = Math.round((len * th) / (px * px) * 2.2);
+        for (let i = 0; i < count; i++) {
+          const u = rand() * 2 - 1, taper = 1 - u * u;
+          const v = gauss() * taper;
+          const dy = v * th + Math.sin(u * 3 + x) * th * 0.4;
+          ctx.globalAlpha = a * (0.55 + 0.45 * taper);
+          ctx.fillStyle = lit && v > 0.25 && rand() < 0.7 ? lit[Math.floor(rand() * lit.length)] : cols[Math.floor(rand() * cols.length)];
+          ctx.fillRect(Math.round(x + u * len / 2), Math.round(y + dy), px * (1 + Math.floor(rand() * 3)), px);
+        }
+      };
+      const masses = [['#3a4030', '#46485a', '#3e4232'], ['#46485a', '#3a3a58', '#524a6a'], ['#5a4a7a', '#4a4070', '#6a5a8a'], ['#4a5040', '#3c4430', '#56584a']];
+      const lits = [['#c8a8f8', '#b48ae8', '#e0b8f0'], ['#8a9ae8', '#7ab0c8', '#a0a8f0'], ['#f0b0d8', '#e0a0e0', '#c8a8f8']];
+      for (let i = 0; i < 30; i++) {
+        const y = h * (0.02 + Math.pow(rand(), 1.1) * 0.34);
+        streak(rand() * w, y, w * (0.16 + rand() * 0.36), h * (0.025 + rand() * 0.045), masses[i % masses.length], rand() < 0.8 ? lits[Math.floor(rand() * lits.length)] : null, 0.75 + rand() * 0.25);
+      }
+      // the bank the beams fall from, bright pink where the light comes through
+      for (let k = 0; k < 6; k++) {
+        const x = sun.x + (k - 2.5) * w * 0.07;
+        streak(x, sun.y - h * 0.045 + (rand() - 0.5) * h * 0.02, w * 0.18, h * 0.045, ['#8a64c8', '#6a50a0', '#9a7ad8'], [['#d8b0ff'], ['#ffc8dc']][k % 2], 0.95);
+        streak(x, sun.y - h * 0.004, w * 0.13, h * 0.018, ['#ffc8dc', '#ffb0a0', '#f8d0f0'], null, 0.85);
+      }
+      ctx.globalAlpha = 1;
+      // far hills in the haze, then the green mountains
+      const peak = (x, at, half, height) => height * Math.pow(Math.max(0, 1 - Math.abs(x - at) / half), 1.2);
+      const rough = ridge(rand, w, 0, h * 0.015);
+      const far = (x) => h * 0.47 - peak(x, w * 0.42, w * 0.22, h * 0.1) - peak(x, w * 0.97, w * 0.15, h * 0.08) + rough(x);
+      ctx.beginPath(); ctx.moveTo(0, h);
+      for (let x = 0; x <= w + 4; x += 3) ctx.lineTo(x, far(x));
+      ctx.lineTo(w, h); ctx.closePath();
+      ctx.fillStyle = vgrad(ctx, h * 0.34, h * 0.5, [[0, '#7a7498'], [1, '#4a5448']]);
+      ctx.fill();
+      const rough2 = ridge(rand, w, 0, h * 0.025);
+      const main = (x) => h * 0.6 - peak(x, w * 0.76, w * 0.32, h * 0.25) - peak(x, w * 0.02, w * 0.26, h * 0.14) + rough2(x);
+      const mPath = new Path2D();
+      mPath.moveTo(0, h);
+      for (let x = 0; x <= w + 4; x += 3) mPath.lineTo(x, main(x));
+      mPath.lineTo(w, h); mPath.closePath();
+      ctx.fillStyle = vgrad(ctx, h * 0.3, h * 0.65, [[0, '#46542a'], [1, '#2a3218']]);
+      ctx.fill(mPath);
+      ctx.save();
+      ctx.clip(mPath);
+      // the slope facing the light is lighter, and paint dabs give it texture
+      const face = ctx.createLinearGradient(w * 0.42, 0, w * 0.76, 0);
+      face.addColorStop(0, 'rgba(110,140,60,0)');
+      face.addColorStop(1, 'rgba(120,150,70,0.55)');
+      ctx.fillStyle = face;
+      ctx.fillRect(w * 0.42, 0, w * 0.34, h);
+      const n = periodicNoise(43, 5);
+      const lit = ['#6a8a3a', '#7e9a46', '#5a7a34', '#8aa456', '#4a7a5a'];
+      const dark = ['#2e3a1a', '#3a4622', '#4a3c24', '#344a2a', '#56603a'];
+      for (let i = 0; i < (w * h) / 14; i++) {
+        const x = rand() * w, y = h * 0.26 + rand() * h * 0.38;
+        if (y < main(x)) continue;
+        const onFace = x > w * 0.44 && x < w * 0.76;
+        const set = n(x / w, y / w) > (onFace ? 0.42 : 0.6) ? lit : dark;
+        ctx.fillStyle = set[Math.floor(rand() * set.length)];
+        ctx.fillRect(Math.round(x), Math.round(y), px * (1 + Math.floor(rand() * 3)), px);
+      }
+      ctx.restore();
+      // the valley floor: patches of heath in greens, yellows and browns
+      const floor = (x) => h * 0.62 + Math.sin((x / w) * TAU * 1.3 + 0.7) * h * 0.015;
+      ctx.beginPath(); ctx.moveTo(0, h);
+      for (let x = 0; x <= w + 4; x += 4) ctx.lineTo(x, floor(x));
+      ctx.lineTo(w, h); ctx.closePath();
+      ctx.fillStyle = vgrad(ctx, h * 0.6, h, [[0, '#3a4630'], [1, '#46523a']]);
+      ctx.fill();
+      const pale = ['#7a8a4a', '#8a9a5a', '#6a8a5a', '#9a9a5a', '#7a9a6a'];
+      const mid = ['#4a5a3a', '#3a5a4a', '#5a6a3a', '#4a4a5a', '#56603a'];
+      const low = ['#2a3a2a', '#344030', '#2a3434', '#3a3a2a', '#303828'];
+      const n2 = periodicNoise(44, 6);
+      for (let i = 0; i < (w * h) / 7; i++) {
+        const x = rand() * w, y = h * 0.6 + rand() * h * 0.4;
+        if (y < floor(x)) continue;
+        const v = n2(x / w, (y - h * 0.6) / w * 1.6);
+        const set = v > 0.56 ? pale : v > 0.44 ? mid : low;
+        ctx.fillStyle = set[Math.floor(rand() * set.length)];
+        ctx.fillRect(Math.round(x), Math.round(y), px * (1 + Math.floor(rand() * 3)), px * (1 + Math.floor(rand() * 2)));
+      }
+      // the lake: lavender sky in it, light streaks, a dark near shore
+      ctx.save();
+      ctx.clip(path);
+      ctx.fillStyle = vgrad(ctx, lake.cy - lake.ry * 1.1, lake.cy + lake.ry * 1.1, [[0, '#9aa4dc'], [0.35, '#5a6aa8'], [1, '#2e3866']]);
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 40; i++) {
+        const y = lake.cy + (rand() - 0.5) * lake.ry * 2, len = lake.rx * (0.1 + rand() * 0.5);
+        ctx.fillStyle = rand() < 0.5 ? 'rgba(200,190,255,0.35)' : 'rgba(40,40,100,0.3)';
+        ctx.fillRect(Math.round(lake.cx + (rand() - 0.5) * lake.rx * 1.6 - len / 2), Math.round(y), Math.round(len), px);
+      }
+      ctx.restore();
+      ctx.save();
+      ctx.translate(0, Math.max(1, px));
+      ctx.strokeStyle = 'rgba(24,28,14,0.7)';
+      ctx.lineWidth = Math.max(1.5, px * 1.5);
+      ctx.stroke(path);
+      ctx.restore();
+      grain(ctx.canvas, px, 30, 0, rand);
+    },
+    // the beams take turns to brighten and the lake sparkles
+    frame(ctx, w, h, t, f, o, { sun, lake, path, sparkles, layers, px }) {
+      ctx.save();
+      layers.forEach((l, k) => {
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(TAU * (t + k / 3));
+        ctx.drawImage(l, 0, 0);
+      });
+      ctx.clip(path);
+      const pool = ctx.createRadialGradient(sun.x, lake.cy - lake.ry * 0.3, 0, sun.x, lake.cy - lake.ry * 0.3, lake.rx * 0.35);
+      pool.addColorStop(0, 'rgba(230,150,230,0.45)');
+      pool.addColorStop(1, 'rgba(230,150,230,0)');
+      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(TAU * t);
+      ctx.fillStyle = pool;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#f4ecff';
+      for (const s of sparkles) {
+        const a = Math.sin(TAU * (t * s.speed + s.phase));
+        if (a < 0.35) continue;
+        ctx.globalAlpha = (a - 0.35) / 0.65;
+        const d = (s.big ? 2 : 1) * Math.max(1, Math.round(px * 1.5));
+        ctx.fillRect(s.x, s.y, d, d);
+        if (s.big && a > 0.8) { ctx.fillRect(s.x - d, s.y, d * 3, 1); ctx.fillRect(s.x, s.y - d, 1, d * 3); }
+      }
       ctx.restore();
     },
   },

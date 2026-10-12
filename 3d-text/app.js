@@ -129,6 +129,7 @@ const LOOKS = {
   nosignal: { label: 'No signal', font: 'archivo-black', finish: 'plastic', color1: '#f0f0f0', sidesMatch: false, sideColor: '#555555', depth: 0.3, bevel: 'chamfer', lights: 'studio', anim: 'flicker', bg: 'tvstatic', effect: 'shadow' },
   aurora: { label: 'Northern lights', font: 'times', finish: 'marble', color1: '#e8f4ff', color2: '#4a7a9a', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'ice', anim: 'spin-stop', bg: 'aurora', effect: 'glow', effectColor: '#5affb0' },
   pizza: { label: 'Pizza party', font: 'luckiest-guy', finish: 'pizza', sidesMatch: false, sideColor: '#c8862a', depth: 0.32, bevel: 'fat', lights: 'studio', anim: 'bounce', bg: 'rainbow', effect: 'shadow' },
+  mistake: { label: 'The internet was a mistake', font: 'archivo-black', finish: 'plastic', color1: '#ffffff', sidesMatch: false, sideColor: '#8a8a9a', depth: 0.06, bevel: 'none', lights: 'studio', anim: 'none', bg: 'valley', effect: 'shadow' },
   heaven: { label: 'Heaven sent', font: 'times-bold', finish: 'gold', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin', bg: 'heaven', effect: 'shadow' },
   wallpaper: { label: 'Default wallpaper', font: 'archivo-black', finish: 'chrome', sidesMatch: true, depth: 0.25, bevel: 'round', lights: 'studio', anim: 'spin', bg: 'hills', effect: 'shadow' },
   safari: { label: 'Safari', font: 'anton', finish: 'zebra', sidesMatch: false, sideColor: '#111111', depth: 0.25, bevel: 'chamfer', lights: 'studio', anim: 'letters-flip', bg: 'tropical' },
